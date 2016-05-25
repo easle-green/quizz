@@ -1,4 +1,9 @@
-angular.module("controllers-quizz", []).controller('QuizzCtrl', ['$scope', '$window', '$injector', function($scope, $window, $injector) {
+angular.module("controllers-quizz", [])
+    .controller('QuizzCtrl', ['$scope', '$window', '$injector', 'quizzDBUtils', function($scope, $window, $injector, quizzDBUtils) {
+
+    // TODO answers stored with questions for first iteration
+    // need to be replaced with answers storing only
+
     $scope.started = false;
     $scope.finished = false;
     $scope.resultSelector  = 'all';
@@ -12,12 +17,26 @@ angular.module("controllers-quizz", []).controller('QuizzCtrl', ['$scope', '$win
     $scope.initWithConstant = function(constant) {
         $scope.init($injector.get(constant));
     };
-
+        
     $scope.init = function(quizz) {
-        $scope.quizz = angular.extend({}, defaultQuizz, quizz);
-        $scope.started = false;
+        $scope.quizz = angular.extend(
+            {},
+            defaultQuizz,
+            quizz,
+            { questions: quizzDBUtils.getAnswers() }
+        );
+
+        quizzDBUtils.setAnswers( $scope.quizz.questions );
+
+        if ( !quizzDBUtils.isNullAnswers() ) {
+            $scope.started = true;
+            $scope.currentQuestion = quizzDBUtils.getCurrentIndex();
+        } else {
+            $scope.started = false;
+            $scope.currentQuestion = null;
+        }
+        
         $scope.finished = false;
-        $scope.currentQuestion = null;
         $scope.resultFilter = $scope.allResultFilter;
     };
 
@@ -56,6 +75,7 @@ angular.module("controllers-quizz", []).controller('QuizzCtrl', ['$scope', '$win
 
     $scope.next = function() {
         $scope.currentQuestion = $scope.quizz.questions[questionIndex() + 1];
+        quizzDBUtils.setAnswers( $scope.quizz.questions );
     };
 
     $scope.previous = function() {
@@ -65,6 +85,7 @@ angular.module("controllers-quizz", []).controller('QuizzCtrl', ['$scope', '$win
     $scope.finish = function() {
         $scope.currentQuestion = null;
         $scope.finished = true;
+        quizzDBUtils.resetAnswers();
     };
 
     function isAnswerCorrect(question) {
